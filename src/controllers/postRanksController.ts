@@ -1,30 +1,32 @@
 import moment from "moment-timezone";
 import pRetry from "p-retry";
-import getRanks from "../services/getRanksService"
-import tweetRanks from "../services/tweetRanksService"
-import Term from "../interfaces/Term";
-import sleep from "../utilities/sleep";
+import getTweetData from "../services/getTweetData"
+import { tweet } from "../services/tweetPostService";
 
-const TWEET_INTERVAL_DELAY = 10 * 1000;
-
-const ranksTweetUpdate = async (term: Term, tweetDelay: number): Promise<void> => {
-    const ranks = await getRanks(term);
-    await sleep(tweetDelay);
-    await tweetRanks(ranks, term);
+const ranksTweetUpdate = async (): Promise<void> => {
+    const [imageBase64, text] = await getTweetData();
+    await tweet(imageBase64, text);
+    console.log(`${moment().utc().format()} Rank Tweet Successful`);
 }
 
-const ranksTweetUpdateExpoBackoff = (term: Term, tweetDelay: number): Promise<void> => {
-    return pRetry(() => ranksTweetUpdate(term, tweetDelay), {
+const ranksTweetUpdateExpoBackoff = (): Promise<void> => {
+    return pRetry(() => ranksTweetUpdate(), {
         onFailedAttempt: error => {
-            console.error(`${moment().utc().format()} ${term} Rank tweet attempt ${error.attemptNumber} failed. ${error}`);
+            console.error(`${moment().utc().format()} Rank tweet attempt ${error.attemptNumber} failed. ${error}`);
         },
         retries: 3
     });
 }
 
-const ranksTweetUpdater = (requestedTerms: Term[]) => {
+const ranksTweetUpdater = async () => {
+    // try{
+    //     await ranksTweetUpdate();
+    // } catch (e) {
+    //     console.log(e);
+    // }
     const rankPromises: Promise<void>[] = [];
-    requestedTerms.forEach((term, index) => rankPromises.push(ranksTweetUpdateExpoBackoff(term, index * TWEET_INTERVAL_DELAY)));
+    rankPromises.push(ranksTweetUpdateExpoBackoff());
+    console.log(rankPromises);
     Promise.allSettled(rankPromises);
 }
 

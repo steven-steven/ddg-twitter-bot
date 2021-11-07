@@ -1,19 +1,16 @@
-import twitterClient from "../utilities/twitterClient";
+import {twitterClient, twitterUploadClient} from "../utilities/twitterClient";
 
-const tweetStat = async (message: string) => {
-    await twitterClient.post("statuses/update", { status: message });
+const tweet = async (imageBase64:any, message: string) => {
+    // upload the media and get the media id
+    const { media_id_string } = await twitterUploadClient.post("media/upload", {
+        media: imageBase64
+    });
+
+    //Post tweet
+    await twitterClient.post("statuses/update", { 
+        status: message, 
+        media_ids: media_id_string
+    });
 }
 
-const tweetThread = async (thread: string[]) => {
-    let lastTweetID = "";
-    for (const status of thread) {
-        const tweet = await twitterClient.post("statuses/update", {
-            status: status,
-            in_reply_to_status_id: lastTweetID,
-            auto_populate_reply_metadata: true
-        });
-        lastTweetID = tweet.id_str;
-    }
-}
-
-export { tweetStat, tweetThread };
+export { tweet };

@@ -8,6 +8,8 @@ const config: TwitterOptions = {
     access_token_secret: secrets.TWITTER_ACCESS_TOKEN_SECRET,
 };
 
-const twitter = new Twitter(config);
+const twitterClient = new Twitter(config);
+const twitterUploadClient = new Twitter(Object.assign(config, {subdomain: "upload"}));
 
-export default twitter;
+
+export {twitterClient, twitterUploadClient};
